@@ -1,15 +1,17 @@
 package main
 
-func getInsideLoop(commands string, loopStartIdx int) (insideLoop string, endLoopIdx int) {
+import "regexp"
+
+func getInsideLoop(commands string, loopStartIdx int) (insideLoop string) {
 	depth := 0
 
 Loop:
 	for _, r := range commands[loopStartIdx+1:] {
 		switch r {
-		case loopStart:
+		case loopEnter:
 			depth++
 			insideLoop += string(r)
-		case loopEnd:
+		case loopExit:
 			if depth <= 0 {
 				break Loop
 			}
@@ -20,5 +22,10 @@ Loop:
 		}
 	}
 
-	return insideLoop, loopStartIdx + len(insideLoop) + 1
+	return insideLoop
+}
+
+func trim(instructions string) string {
+	re := regexp.MustCompile(`\r?\n| |[a-zA-Z0-9]`)
+	return re.ReplaceAllString(instructions, "")
 }

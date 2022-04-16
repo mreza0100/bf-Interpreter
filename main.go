@@ -4,45 +4,26 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 )
 
 // brain fuck interpreter ^.^
-
-// idea:
-// 1. read from stdin
-// 2. check if it is a valid brainfuck program
-
-const (
-	moveForward  = '>'
-	moveBackward = '<'
-	increment    = '+'
-	decrement    = '-'
-	print        = '.'
-	read         = ','
-	loopStart    = '['
-	loopEnd      = ']'
-)
-
-const (
-	memorySize = 30
-)
 
 type cell struct {
 	value byte
 }
 
 type brainfuck struct {
-	memory  [memorySize]cell
-	pointer int
-	charAt  int
+	memory          [memorySize]cell
+	pointer         int
+	runnerIdx       int
+	rawInstructions string
 
 	writter io.Writer
 	reader  io.Reader
 }
 
 func (d *brainfuck) print() {
-	fmt.Printf("At: %v, stringValue: %c, raw: %v\n", d.pointer, d.memory[d.pointer].value, d.memory[d.pointer].value)
+	fmt.Fprintf(d.writter, "pointer: %v, string_value: %c, byte_value: %v\n", d.pointer, d.memory[d.pointer].value, d.memory[d.pointer].value)
 }
 
 func (d *brainfuck) moveForward() {
@@ -73,9 +54,21 @@ func (d *brainfuck) decrement() {
 	d.memory[d.pointer].value--
 }
 
-func (d *brainfuck) read(commands string) {
-	for d.charAt = 0; d.charAt < len(commands); d.charAt++ {
-		switch commands[d.charAt] {
+func (d *brainfuck) read() {
+	fmt.Fscanf(d.reader, "%c", &d.memory[d.pointer].value)
+}
+
+func (d *brainfuck) loop(instructions string) {
+	insideLoop := getInsideLoop(instructions, d.runnerIdx)
+
+	for d.memory[d.pointer].value != 0 {
+		d.execute(insideLoop)
+	}
+}
+
+func (d *brainfuck) execute(instructions string) {
+	for d.runnerIdx = 0; d.runnerIdx < len(instructions); d.runnerIdx++ {
+		switch instructions[d.runnerIdx] {
 		case moveForward:
 			d.moveForward()
 		case moveBackward:
@@ -87,28 +80,23 @@ func (d *brainfuck) read(commands string) {
 		case print:
 			d.print()
 		case read:
-			temp := make([]byte, 1)
-			fmt.Scanf("%c", &temp[0])
-			d.memory[d.pointer].value = temp[0]
-		case loopStart:
-			insideLoop, endLoopIdx := getInsideLoop(commands, d.charAt)
-			d.charAt = endLoopIdx
-			fmt.Println("start loop\n", insideLoop)
-
-			loopDependsOn := d.pointer
-			for d.memory[loopDependsOn].value != 0 {
-				time.Sleep(time.Second / 2)
-				d.read(insideLoop)
-			}
+			d.read()
+		case loopEnter:
+			d.loop(instructions)
 		}
 	}
 }
 
+func (d *brainfuck) entry(instructions string) {
+	d.rawInstructions += instructions
+	d.execute(trim(instructions))
+}
+
 func New() *brainfuck {
 	return &brainfuck{
-		memory:  [memorySize]cell{},
-		pointer: 0,
-		charAt:  0,
+		memory:    [memorySize]cell{},
+		pointer:   0,
+		runnerIdx: 0,
 
 		writter: os.Stdout,
 		reader:  os.Stdin,
@@ -116,28 +104,22 @@ func New() *brainfuck {
 }
 
 const in = `
-++
-[
-	>+++
-	[
-		-.
-	]
-	<----
-]
+,.
 `
 
 // nested loops
 // ++
 // [
 // 	>+++
-// 		[-.]
+// 	[
+// 		-.
+// 	]
 // 	<-
 // ]
-// +++
 
 func main() {
 	m := New()
 
-	m.read(in)
+	m.entry(in)
 	fmt.Println("\n\n---\n", m.memory)
 }
