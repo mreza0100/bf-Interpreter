@@ -1,26 +1,38 @@
 package main
 
-type Stack []string
-
-func (s *Stack) Push(v string) {
-	*s = append(*s, v)
+// LoopStack for loops
+type LoopStack struct {
+	data []int
 }
 
-func (s *Stack) Pop() string {
-	l := len(*s)
-	if l > 0 {
-		op := (*s)[l-1]
-		*s = (*s)[:l-1]
-		return op
+func NewLoopStack() *LoopStack {
+	return &LoopStack{
+		data: make([]int, 0),
 	}
-	return ""
 }
 
-func (s *Stack) Top() string {
-	n := len(*s) - 1
-	return (*s)[n]
+func (s *LoopStack) Push(i int) {
+	s.data = append(s.data, i)
 }
 
-func (s Stack) Len() int {
-	return len(s)
+func (s *LoopStack) Pop() int {
+	if len(s.data) == 0 {
+		panic("stack is empty")
+	}
+
+	i := s.data[len(s.data)-1]
+	s.data = s.data[:len(s.data)-1]
+	return i
+}
+
+func (s *LoopStack) Top() int {
+	if len(s.data) == 0 {
+		panic("stack is empty")
+	}
+
+	return s.data[len(s.data)-1]
+}
+
+func (s *LoopStack) IsEmpty() bool {
+	return len(s.data) == 0
 }
