@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
-	"strings"
 )
 
 // brain fuck interpreter ^.^
 
-type brainfuck struct {
+type Brainfuck struct {
 	memory     [memorySize]byte
 	loopStack  *LoopStack
 	memPointer int
@@ -19,47 +17,47 @@ type brainfuck struct {
 	rawInstructions string
 	runnerAt        int
 
-	writter io.Writer
-	reader  io.Reader
+	Writter io.Writer
+	Reader  io.Reader
 }
 
-func (bf *brainfuck) print() {
-	fmt.Fprintf(bf.writter, "pointer: %v, string_value: %v, byte_value: %c\n", bf.memPointer, bf.memory[bf.memPointer], bf.memory[bf.memPointer])
+func (bf *Brainfuck) print() {
+	fmt.Fprintf(bf.Writter, "pointer: %v, string_value: %v, byte_value: %c\n", bf.memPointer, bf.memory[bf.memPointer], bf.memory[bf.memPointer])
 }
 
-func (bf *brainfuck) moveForward() {
+func (bf *Brainfuck) moveForward() {
 	bf.memPointer++
 	if bf.memPointer >= memorySize {
 		bf.memPointer = 0
 	}
 }
 
-func (bf *brainfuck) moveBackward() {
+func (bf *Brainfuck) moveBackward() {
 	bf.memPointer--
 	if bf.memPointer < 0 {
 		bf.memPointer = memorySize - 1
 	}
 }
 
-func (bf *brainfuck) increment() {
+func (bf *Brainfuck) increment() {
 	if bf.memory[bf.memPointer] > 255 {
 		return
 	}
 	bf.memory[bf.memPointer]++
 }
 
-func (bf *brainfuck) decrement() {
+func (bf *Brainfuck) decrement() {
 	if bf.memory[bf.memPointer] <= 0 {
 		return
 	}
 	bf.memory[bf.memPointer]--
 }
 
-func (bf *brainfuck) read() {
+func (bf *Brainfuck) read() {
 	buf := make([]byte, 1)
 
 	for {
-		_, err := bf.reader.Read(buf)
+		_, err := bf.Reader.Read(buf)
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -68,18 +66,18 @@ func (bf *brainfuck) read() {
 		}
 
 		// handeling dump input from stdin
-		if bf.reader == os.Stdin && buf[0] != '\n' {
+		if bf.Reader == os.Stdin && buf[0] != '\n' {
 			bf.memory[bf.memPointer] = buf[0]
 			break
 		}
 	}
 }
 
-func (bf *brainfuck) loopEnter() {
+func (bf *Brainfuck) loopEnter() {
 	bf.loopStack.Push(bf.runnerAt - 1)
 }
 
-func (bf *brainfuck) loopExit() {
+func (bf *Brainfuck) loopExit() {
 	if bf.loopStack.IsEmpty() {
 		panic("No loop to exit")
 	}
@@ -98,11 +96,11 @@ func (bf *brainfuck) loopExit() {
 	}
 }
 
-func (bf *brainfuck) isRunnerAtEdge() bool {
+func (bf *Brainfuck) isRunnerAtEdge() bool {
 	return bf.runnerAt == len(bf.instructions)
 }
 
-func (bf *brainfuck) addInstruction(instruction byte) {
+func (bf *Brainfuck) addInstruction(instruction byte) {
 	cleanInstruction := trim(instruction)
 
 	// do not add repeated instructions from the loop
@@ -118,7 +116,7 @@ func (bf *brainfuck) addInstruction(instruction byte) {
 	}
 }
 
-func (bf *brainfuck) execute(instruction byte) {
+func (bf *Brainfuck) execute(instruction byte) {
 	bf.addInstruction(instruction)
 
 	switch instruction {
@@ -141,7 +139,7 @@ func (bf *brainfuck) execute(instruction byte) {
 	}
 }
 
-func (bf *brainfuck) entry(stream io.Reader) {
+func (bf *Brainfuck) Entry(stream io.Reader) {
 	buf := make([]byte, 1)
 
 	for {
@@ -157,40 +155,15 @@ func (bf *brainfuck) entry(stream io.Reader) {
 	}
 }
 
-func New() *brainfuck {
-	return &brainfuck{
+func New() *Brainfuck {
+	return &Brainfuck{
 		memory:       [memorySize]byte{},
 		memPointer:   0,
 		loopStack:    NewLoopStack(),
 		instructions: "",
 		runnerAt:     0,
 
-		writter: os.Stdout,
-		reader:  os.Stdin,
+		Writter: os.Stdout,
+		Reader:  os.Stdin,
 	}
-}
-
-const in = `+++++[-.]`
-
-// nested loops
-const nested = `
-	++
-	[
-		>+++
-		[
-			-.
-		]
-		<-
-	]
-	>>
-`
-
-func main() {
-	m := New()
-	runtime.KeepAlive(in)
-	runtime.KeepAlive(nested)
-
-	m.entry(strings.NewReader(nested))
-	fmt.Println(m.instructions)
-	fmt.Println("\n\n---\n", m.memory)
 }
