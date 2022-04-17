@@ -1,4 +1,4 @@
-package main
+package brainfuck
 
 import (
 	"fmt"
@@ -10,24 +10,21 @@ import (
 
 // brain fuck interpreter ^.^
 
-type cell struct {
-	value byte
-}
-
 type brainfuck struct {
-	memory     [memorySize]cell
+	memory     [memorySize]byte
 	loopStack  *LoopStack
 	memPointer int
 
-	instructions string
-	runnerAt     int
+	instructions    string
+	rawInstructions string
+	runnerAt        int
 
 	writter io.Writer
 	reader  io.Reader
 }
 
 func (bf *brainfuck) print() {
-	fmt.Fprintf(bf.writter, "pointer: %v, string_value: %c, byte_value: %v\n", bf.memPointer, bf.memory[bf.memPointer].value, bf.memory[bf.memPointer].value)
+	fmt.Fprintf(bf.writter, "pointer: %v, string_value: %v, byte_value: %c\n", bf.memPointer, bf.memory[bf.memPointer], bf.memory[bf.memPointer])
 }
 
 func (bf *brainfuck) moveForward() {
@@ -45,17 +42,17 @@ func (bf *brainfuck) moveBackward() {
 }
 
 func (bf *brainfuck) increment() {
-	if bf.memory[bf.memPointer].value > 255 {
+	if bf.memory[bf.memPointer] > 255 {
 		return
 	}
-	bf.memory[bf.memPointer].value++
+	bf.memory[bf.memPointer]++
 }
 
 func (bf *brainfuck) decrement() {
-	if bf.memory[bf.memPointer].value <= 0 {
+	if bf.memory[bf.memPointer] <= 0 {
 		return
 	}
-	bf.memory[bf.memPointer].value--
+	bf.memory[bf.memPointer]--
 }
 
 func (bf *brainfuck) read() {
@@ -70,10 +67,34 @@ func (bf *brainfuck) read() {
 			panic(err)
 		}
 
+		// handeling dump input from stdin
 		if bf.reader == os.Stdin && buf[0] != '\n' {
-			bf.memory[bf.memPointer].value = buf[0]
+			bf.memory[bf.memPointer] = buf[0]
 			break
 		}
+	}
+}
+
+func (bf *brainfuck) loopEnter() {
+	bf.loopStack.Push(bf.runnerAt - 1)
+}
+
+func (bf *brainfuck) loopExit() {
+	if bf.loopStack.IsEmpty() {
+		panic("No loop to exit")
+	}
+
+	if bf.memory[bf.memPointer] == 0 {
+		bf.loopStack.Pop()
+		return
+	}
+
+	loopStart := bf.loopStack.Pop()
+	loopEnd := bf.runnerAt
+	bf.runnerAt = loopStart
+
+	for _, i := range bf.instructions[loopStart:loopEnd] {
+		bf.execute(byte(i))
 	}
 }
 
@@ -82,10 +103,19 @@ func (bf *brainfuck) isRunnerAtEdge() bool {
 }
 
 func (bf *brainfuck) addInstruction(instruction byte) {
+	cleanInstruction := trim(instruction)
+
+	// do not add repeated instructions from the loop
 	if bf.isRunnerAtEdge() {
-		bf.instructions += string(instruction)
+		bf.instructions += cleanInstruction
+		bf.rawInstructions += string(instruction)
 	}
-	bf.runnerAt++
+
+	// do not add dump instructions
+	isClean := cleanInstruction != ""
+	if isClean {
+		bf.runnerAt++
+	}
 }
 
 func (bf *brainfuck) execute(instruction byte) {
@@ -105,24 +135,9 @@ func (bf *brainfuck) execute(instruction byte) {
 	case read:
 		bf.read()
 	case loopEnter:
-		bf.loopStack.Push(bf.runnerAt - 1)
+		bf.loopEnter()
 	case loopExit:
-		if bf.loopStack.IsEmpty() {
-			panic("loop stack is empty")
-		}
-
-		if bf.memory[bf.memPointer].value == 0 {
-			bf.loopStack.Pop()
-			break
-		}
-
-		loopStart := bf.loopStack.Pop()
-		loopEnd := bf.runnerAt
-		bf.runnerAt = loopStart
-
-		for _, i := range bf.instructions[loopStart:loopEnd] {
-			bf.execute(byte(i))
-		}
+		bf.loopExit()
 	}
 }
 
@@ -144,7 +159,7 @@ func (bf *brainfuck) entry(stream io.Reader) {
 
 func New() *brainfuck {
 	return &brainfuck{
-		memory:       [memorySize]cell{},
+		memory:       [memorySize]byte{},
 		memPointer:   0,
 		loopStack:    NewLoopStack(),
 		instructions: "",
@@ -167,6 +182,7 @@ const nested = `
 		]
 		<-
 	]
+	>>
 `
 
 func main() {
@@ -175,5 +191,6 @@ func main() {
 	runtime.KeepAlive(nested)
 
 	m.entry(strings.NewReader(nested))
+	fmt.Println(m.instructions)
 	fmt.Println("\n\n---\n", m.memory)
 }

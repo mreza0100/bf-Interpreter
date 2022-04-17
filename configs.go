@@ -1,11 +1,11 @@
-package main
+package brainfuck
 
 const (
+	print        = '.'
 	moveForward  = '>'
 	moveBackward = '<'
 	increment    = '+'
 	decrement    = '-'
-	print        = '.'
 	read         = ','
 	loopEnter    = '['
 	loopExit     = ']'

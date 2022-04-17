@@ -1,4 +1,4 @@
-package main
+package brainfuck
 
 // LoopStack for loops
 type LoopStack struct {
