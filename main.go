@@ -10,7 +10,7 @@ import (
 
 type Brainfuck struct {
 	memory     [memorySize]byte
-	loopStack  *LoopStack
+	loopStack  *loopStack
 	memPointer int
 
 	instructions    string
@@ -74,20 +74,20 @@ func (bf *Brainfuck) read() {
 }
 
 func (bf *Brainfuck) loopEnter() {
-	bf.loopStack.Push(bf.runnerAt - 1)
+	bf.loopStack.push(bf.runnerAt - 1)
 }
 
 func (bf *Brainfuck) loopExit() {
-	if bf.loopStack.IsEmpty() {
+	if bf.loopStack.isEmpty() {
 		panic("No loop to exit")
 	}
 
 	if bf.memory[bf.memPointer] == 0 {
-		bf.loopStack.Pop()
+		bf.loopStack.pop()
 		return
 	}
 
-	loopStart := bf.loopStack.Pop()
+	loopStart := bf.loopStack.pop()
 	loopEnd := bf.runnerAt
 	bf.runnerAt = loopStart
 
@@ -157,11 +157,12 @@ func (bf *Brainfuck) Entry(stream io.Reader) {
 
 func New() *Brainfuck {
 	return &Brainfuck{
-		memory:       [memorySize]byte{},
-		memPointer:   0,
-		loopStack:    NewLoopStack(),
-		instructions: "",
-		runnerAt:     0,
+		memory:          [memorySize]byte{},
+		memPointer:      0,
+		loopStack:       newLoopStack(),
+		instructions:    "",
+		rawInstructions: "",
+		runnerAt:        0,
 
 		Writter: os.Stdout,
 		Reader:  os.Stdin,

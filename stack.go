@@ -1,38 +1,41 @@
 package brainfuck
 
-// LoopStack for loops
-type LoopStack struct {
+type loopStack struct {
 	data []int
 }
 
-func NewLoopStack() *LoopStack {
-	return &LoopStack{
+func newLoopStack() *loopStack {
+	return &loopStack{
 		data: make([]int, 0),
 	}
 }
 
-func (s *LoopStack) Push(i int) {
+func (s *loopStack) push(i int) {
 	s.data = append(s.data, i)
 }
 
-func (s *LoopStack) Pop() int {
-	if len(s.data) == 0 {
+func (s *loopStack) pop() int {
+	if s.len() == 0 {
 		panic("stack is empty")
 	}
 
-	i := s.data[len(s.data)-1]
-	s.data = s.data[:len(s.data)-1]
+	i := s.data[s.len()-1]
+	s.data = s.data[:s.len()-1]
 	return i
 }
 
-func (s *LoopStack) Top() int {
-	if len(s.data) == 0 {
+func (s *loopStack) top() int {
+	if s.len() == 0 {
 		panic("stack is empty")
 	}
 
-	return s.data[len(s.data)-1]
+	return s.data[s.len()-1]
 }
 
-func (s *LoopStack) IsEmpty() bool {
-	return len(s.data) == 0
+func (s *loopStack) isEmpty() bool {
+	return s.len() == 0
+}
+
+func (s *loopStack) len() int {
+	return len(s.data)
 }
