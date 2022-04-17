@@ -81,7 +81,6 @@ func (bf *Brainfuck) loopExit() {
 	if bf.loopStack.isEmpty() {
 		panic("No loop to exit")
 	}
-
 	if bf.memory[bf.memPointer] == 0 {
 		bf.loopStack.pop()
 		return
