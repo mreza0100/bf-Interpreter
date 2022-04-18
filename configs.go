@@ -10,7 +10,3 @@ const (
 	loopEnter    = '['
 	loopExit     = ']'
 )
-
-const (
-	memorySize = 30
-)

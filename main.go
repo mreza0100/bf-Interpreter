@@ -9,7 +9,7 @@ import (
 // brainfuck interpreter ^.^
 
 type Brainfuck struct {
-	memory     [memorySize]byte
+	memory     *memory
 	loopStack  *loopStack
 	memPointer int
 	errors     *errorCheck
@@ -25,39 +25,45 @@ type Brainfuck struct {
 
 func (bf *Brainfuck) print() {
 	if bf.Verbos {
-		fmt.Fprintf(bf.Writter, "pointer: %v, string_value: %v, byte_value: %c\n", bf.memPointer, bf.memory[bf.memPointer], bf.memory[bf.memPointer])
+		fmt.Fprintf(bf.Writter, "pointer: %v, string_value: %v, byte_value: %c\n", bf.memPointer, bf.memory.values[bf.memPointer], bf.memory.values[bf.memPointer])
 		return
 	}
 
-	fmt.Fprintf(bf.Writter, "%c", bf.memory[bf.memPointer])
+	fmt.Fprintf(bf.Writter, "%c", bf.memory.values[bf.memPointer])
 }
 
 func (bf *Brainfuck) moveForward() {
 	bf.memPointer++
-	if bf.memPointer >= memorySize {
+	if !bf.memory.isOut(bf.memPointer) {
+		return
+	}
+
+	if bf.memory.isStatic {
 		bf.memPointer = 0
+	} else {
+		bf.memory.moreCap()
 	}
 }
 
 func (bf *Brainfuck) moveBackward() {
 	bf.memPointer--
-	if bf.memPointer < 0 {
-		bf.memPointer = memorySize - 1
+	if bf.memory.isOut(bf.memPointer) {
+		bf.memPointer = bf.memory.len() - 1
 	}
 }
 
 func (bf *Brainfuck) increment() {
-	if bf.memory[bf.memPointer] > 255 {
+	if bf.memory.values[bf.memPointer] > 255 {
 		return
 	}
-	bf.memory[bf.memPointer]++
+	bf.memory.values[bf.memPointer]++
 }
 
 func (bf *Brainfuck) decrement() {
-	if bf.memory[bf.memPointer] <= 0 {
+	if bf.memory.values[bf.memPointer] <= 0 {
 		return
 	}
-	bf.memory[bf.memPointer]--
+	bf.memory.values[bf.memPointer]--
 }
 
 func (bf *Brainfuck) read() {
@@ -75,7 +81,7 @@ func (bf *Brainfuck) read() {
 		// handeling dump input from stdin
 		// we can use Fscanln too
 		if bf.Reader == os.Stdin && buf[0] != '\n' {
-			bf.memory[bf.memPointer] = buf[0]
+			bf.memory.values[bf.memPointer] = buf[0]
 			break
 		}
 	}
@@ -90,7 +96,7 @@ func (bf *Brainfuck) loopExit() {
 		panic(err)
 	}
 
-	if bf.memory[bf.memPointer] == 0 {
+	if bf.memory.values[bf.memPointer] == 0 {
 		bf.loopStack.pop()
 		return
 	}
@@ -151,7 +157,7 @@ func (bf *Brainfuck) execute(instruction byte) {
 	}
 }
 
-func (bf *Brainfuck) Entry(stream io.Reader) {
+func (bf *Brainfuck) Run(stream io.Reader) {
 	buf := make([]byte, 1)
 
 	for {
@@ -167,17 +173,45 @@ func (bf *Brainfuck) Entry(stream io.Reader) {
 	}
 }
 
-func New() *Brainfuck {
-	return &Brainfuck{
-		memory:          [memorySize]byte{},
+type NewOptions struct {
+	// initial size of memory
+	MemorySize int
+	// is memory static. if you move forward and there will be no extra space, it will get 2 times more
+	IsMemoryStatic bool
+	// verbos logging; example: pointer: 2, string_value: 97, byte_value: a
+	Verbos bool
+	// custom writer for loggs. default to stdout
+	Writter io.Writer
+	// custom reader for input. default to stdin
+	Reader io.Reader
+}
+
+func New(options *NewOptions) *Brainfuck {
+	if options.MemorySize == 0 {
+		options.MemorySize = 300
+	}
+
+	if options.Writter == nil {
+		options.Writter = os.Stdout
+	}
+
+	if options.Reader == nil {
+		options.Reader = os.Stdin
+	}
+
+	bf := &Brainfuck{
+		memory:          newMemory(options.MemorySize, options.IsMemoryStatic),
 		memPointer:      0,
 		loopStack:       newLoopStack(),
 		instructions:    "",
 		rawInstructions: "",
 		runnerAt:        0,
-		Verbos:          false,
+		Verbos:          options.Verbos,
+		errors:          newErrorCheck(),
 
-		Writter: os.Stdout,
-		Reader:  os.Stdin,
+		Writter: options.Writter,
+		Reader:  options.Reader,
 	}
+
+	return bf
 }

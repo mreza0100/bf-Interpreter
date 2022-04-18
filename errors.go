@@ -6,6 +6,10 @@ import (
 
 type errorCheck struct{}
 
+func newErrorCheck() *errorCheck {
+	return new(errorCheck)
+}
+
 func (e *errorCheck) makeError(bf *Brainfuck, msg string) error {
 	var (
 		start = bf.runnerAt - 5
