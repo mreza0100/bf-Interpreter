@@ -16,13 +16,19 @@ type Brainfuck struct {
 	instructions    string
 	rawInstructions string
 	runnerAt        int
+	VerbosPrint     bool
 
 	Writter io.Writer
 	Reader  io.Reader
 }
 
 func (bf *Brainfuck) print() {
-	fmt.Fprintf(bf.Writter, "pointer: %v, string_value: %v, byte_value: %c\n", bf.memPointer, bf.memory[bf.memPointer], bf.memory[bf.memPointer])
+	if bf.VerbosPrint {
+		fmt.Fprintf(bf.Writter, "pointer: %v, string_value: %v, byte_value: %c\n", bf.memPointer, bf.memory[bf.memPointer], bf.memory[bf.memPointer])
+		return
+	}
+
+	fmt.Fprintf(bf.Writter, "%c", bf.memory[bf.memPointer])
 }
 
 func (bf *Brainfuck) moveForward() {
