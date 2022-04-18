@@ -31,17 +31,6 @@ func TestE2E(t *testing.T) {
 			shouldPanic: false,
 		},
 		{
-			name:  "stackover flow",
-			input: "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.", expected: nil,
-			shouldPanic: true,
-			options: &NewOptions{
-				MemorySize:     1,
-				IsMemoryStatic: true,
-				Verbos:         false,
-				Reader:         nil,
-			},
-		},
-		{
 			name:  "Simple loop",
 			input: "++++[-.]", expected: []byte{3, 2, 1, 0},
 			shouldPanic: false,
@@ -84,24 +73,21 @@ func TestE2E(t *testing.T) {
 						// test passed
 						return
 					}
-
 					panic(r)
 				}
 			}()
 
 			writter := new(bytes.Buffer)
-
-			var options *NewOptions
 			if test.options == nil {
-				options = &NewOptions{
+				test.options = &NewOptions{
 					MemorySize:     10,
 					IsMemoryStatic: true,
 					Verbos:         false,
-					Writter:        writter,
 					Reader:         nil,
 				}
 			}
-			bf := New(options)
+			test.options.Writter = writter
+			bf := New(test.options)
 
 			bf.Run(test.getI())
 
