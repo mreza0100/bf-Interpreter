@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-// brain fuck interpreter ^.^
+// brainfuck interpreter ^.^
 
 type Brainfuck struct {
 	memory     [memorySize]byte
@@ -66,6 +66,7 @@ func (bf *Brainfuck) read() {
 		}
 
 		// handeling dump input from stdin
+		// we can use Fscanln too
 		if bf.Reader == os.Stdin && buf[0] != '\n' {
 			bf.memory[bf.memPointer] = buf[0]
 			break

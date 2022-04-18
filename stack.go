@@ -24,14 +24,6 @@ func (s *loopStack) pop() int {
 	return i
 }
 
-func (s *loopStack) top() int {
-	if s.len() == 0 {
-		panic("stack is empty")
-	}
-
-	return s.data[s.len()-1]
-}
-
 func (s *loopStack) isEmpty() bool {
 	return s.len() == 0
 }
