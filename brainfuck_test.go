@@ -81,7 +81,7 @@ func TestE2E(t *testing.T) {
 			if test.options == nil {
 				test.options = &NewOptions{
 					MemorySize:     10,
-					IsMemoryStatic: true,
+					IsMemoryStatic: false,
 					Verbos:         false,
 					Reader:         nil,
 				}
