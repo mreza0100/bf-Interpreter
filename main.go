@@ -12,18 +12,19 @@ type Brainfuck struct {
 	memory     [memorySize]byte
 	loopStack  *loopStack
 	memPointer int
+	errors     *errorCheck
 
 	instructions    string
 	rawInstructions string
 	runnerAt        int
-	VerbosPrint     bool
+	Verbos          bool
 
 	Writter io.Writer
 	Reader  io.Reader
 }
 
 func (bf *Brainfuck) print() {
-	if bf.VerbosPrint {
+	if bf.Verbos {
 		fmt.Fprintf(bf.Writter, "pointer: %v, string_value: %v, byte_value: %c\n", bf.memPointer, bf.memory[bf.memPointer], bf.memory[bf.memPointer])
 		return
 	}
@@ -85,8 +86,8 @@ func (bf *Brainfuck) loopEnter() {
 }
 
 func (bf *Brainfuck) loopExit() {
-	if bf.loopStack.isEmpty() {
-		panic("No loop to exit")
+	if err := bf.errors.noOpenedLoopCheck(bf); err != nil {
+		panic(err)
 	}
 
 	if bf.memory[bf.memPointer] == 0 {
@@ -97,8 +98,12 @@ func (bf *Brainfuck) loopExit() {
 	loopStart := bf.loopStack.pop()
 	loopEnd := bf.runnerAt
 	bf.runnerAt = loopStart
+	insideLoop := bf.instructions[loopStart:loopEnd]
 
-	for _, i := range bf.instructions[loopStart:loopEnd] {
+	if err := bf.errors.emptyLoopCheck(insideLoop, bf); err != nil {
+		panic(err)
+	}
+	for _, i := range insideLoop {
 		bf.execute(byte(i))
 	}
 }
@@ -170,6 +175,7 @@ func New() *Brainfuck {
 		instructions:    "",
 		rawInstructions: "",
 		runnerAt:        0,
+		Verbos:          false,
 
 		Writter: os.Stdout,
 		Reader:  os.Stdin,
