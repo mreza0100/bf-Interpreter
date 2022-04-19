@@ -19,13 +19,14 @@ type Brainfuck struct {
 	runnerAt        int
 	Verbos          bool
 
-	Writter io.Writer
-	Reader  io.Reader
+	customInstructions *CustomInstruction
+	Writter            io.Writer
+	Reader             io.Reader
 }
 
 func (bf *Brainfuck) print() {
 	if bf.Verbos {
-		fmt.Fprintf(bf.Writter, "pointer: %v, string_value: %v, byte_value: %c\n", bf.memPointer, bf.memory.values[bf.memPointer], bf.memory.values[bf.memPointer])
+		fmt.Fprintf(bf.Writter, "pointer: %v, byte_value: %v, value: %c\n", bf.memPointer, bf.memory.values[bf.memPointer], bf.memory.values[bf.memPointer])
 		return
 	}
 
@@ -114,6 +115,14 @@ func (bf *Brainfuck) loopExit() {
 	}
 }
 
+func (bf *Brainfuck) AddCustomInstruction(instruction byte, ie InstructionExecutive) error {
+	return bf.customInstructions.add(instruction, ie)
+}
+
+func (bf *Brainfuck) RemoveCustomInstruction(instruction byte) error {
+	return bf.customInstructions.remove(instruction)
+}
+
 func (bf *Brainfuck) isRunnerAtEdge() bool {
 	return bf.runnerAt == len(bf.instructions)
 }
@@ -154,6 +163,10 @@ func (bf *Brainfuck) execute(instruction byte) {
 		bf.loopEnter()
 	case loopExit:
 		bf.loopExit()
+	default:
+		if cmd, exist := bf.customInstructions.get(instruction); exist {
+			cmd(bf.customInstructions.InstructionCtl)
+		}
 	}
 }
 
@@ -212,6 +225,7 @@ func New(options *NewOptions) *Brainfuck {
 		Writter: options.Writter,
 		Reader:  options.Reader,
 	}
+	bf.customInstructions = newCustomInstruction(bf)
 
 	return bf
 }
