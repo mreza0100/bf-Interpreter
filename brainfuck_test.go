@@ -80,10 +80,10 @@ func TestE2E(t *testing.T) {
 			writter := new(bytes.Buffer)
 			if test.options == nil {
 				test.options = &NewOptions{
-					MemorySize:     10,
-					IsMemoryStatic: false,
-					Verbos:         false,
-					Reader:         nil,
+					MemorySize:   10,
+					StaticMemory: false,
+					Verbos:       false,
+					Reader:       nil,
 				}
 			}
 			test.options.Writter = writter

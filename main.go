@@ -19,9 +19,9 @@ type Brainfuck struct {
 	runnerAt        int
 	Verbos          bool
 
-	customInstructions *CustomInstruction
-	Writter            io.Writer
-	Reader             io.Reader
+	customCommands *CustomCommands
+	Writter        io.Writer
+	Reader         io.Reader
 }
 
 func (bf *Brainfuck) print() {
@@ -115,12 +115,12 @@ func (bf *Brainfuck) loopExit() {
 	}
 }
 
-func (bf *Brainfuck) AddCustomInstruction(instruction byte, ie InstructionExecutive) error {
-	return bf.customInstructions.add(instruction, ie)
+func (bf *Brainfuck) AddCustomCommand(command byte, ie CommandExecutor) error {
+	return bf.customCommands.add(command, ie)
 }
 
-func (bf *Brainfuck) RemoveCustomInstruction(instruction byte) error {
-	return bf.customInstructions.remove(instruction)
+func (bf *Brainfuck) RemoveCustomCommand(command byte) error {
+	return bf.customCommands.remove(command)
 }
 
 func (bf *Brainfuck) isRunnerAtEdge() bool {
@@ -164,8 +164,8 @@ func (bf *Brainfuck) execute(instruction byte) {
 	case loopExit:
 		bf.loopExit()
 	default:
-		if cmd, exist := bf.customInstructions.get(instruction); exist {
-			cmd(bf.customInstructions.InstructionCtl)
+		if cmd, exist := bf.customCommands.get(instruction); exist {
+			cmd(bf.customCommands.CommandsCtl)
 		}
 	}
 }
@@ -189,8 +189,9 @@ func (bf *Brainfuck) Run(stream io.Reader) {
 type NewOptions struct {
 	// initial size of memory
 	MemorySize int
-	// is memory static. if you move forward and there will be no extra space, it will get 2 times more
-	IsMemoryStatic bool
+	// is memory static. if you move forward and there will be no extra space, memory will get 2 times more
+	// if it be static, memory will not grow and if you move forward and there will be no extra space, you will just jump back to memory[0]
+	StaticMemory bool
 	// verbos logging; example: pointer: 2, string_value: 97, byte_value: a
 	Verbos bool
 	// custom writer for loggs. default to stdout
@@ -213,7 +214,7 @@ func New(options *NewOptions) *Brainfuck {
 	}
 
 	bf := &Brainfuck{
-		memory:          newMemory(options.MemorySize, options.IsMemoryStatic),
+		memory:          newMemory(options.MemorySize, options.StaticMemory),
 		memPointer:      0,
 		loopStack:       newLoopStack(),
 		instructions:    "",
@@ -225,7 +226,7 @@ func New(options *NewOptions) *Brainfuck {
 		Writter: options.Writter,
 		Reader:  options.Reader,
 	}
-	bf.customInstructions = newCustomInstruction(bf)
+	bf.customCommands = newCustomCommand(bf)
 
 	return bf
 }

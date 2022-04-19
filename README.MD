@@ -25,7 +25,7 @@ bf.Run(strings.NewReader(instructions))
 ## Custom Instructions
 ``` go
 bf := New(&NewOptions{})
-err := bf.AddCustomInstruction('@', func(icw brainfuck.InstructionCtl) {
+err := bf.AddCustomCommand('@', func(icw brainfuck.InstructionCtl) {
       // you have tools to do almost anything
 		icw.GetMemory()
 		icw.GetPointerPosition()
@@ -38,15 +38,15 @@ err := bf.AddCustomInstruction('@', func(icw brainfuck.InstructionCtl) {
 		icw.Read()
 })
 if err != nil {
-      // error in case instruction is already defined or it's a default instruction
+      // error in case command is already defined or it's a default command
       panic(err)
 }
 instructions := "@"
 bf.Run(strings.NewReader(instructions))
 
-err = bf.RemoveCustomInstruction('@')
+err = bf.RemoveCustomCommand('@')
 if err != nil {
-      // error in case of custom instruction not found
+      // error in case of custom command not found
       panic(err)
 }
 
