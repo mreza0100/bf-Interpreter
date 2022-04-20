@@ -8,7 +8,7 @@ go get -u github.com/mreza0100/brainfuck
 ## Usage
 ``` go
 myCustomWritter := new(bytes.Buffer)
-bf := New(&NewOptions{
+bf := brainfuck.New(&brainfuck.NewOptions{
       // inline documention for each of them is accessible in the source code
       MemorySize:     100,
       IsMemoryStatic: true,
@@ -22,9 +22,9 @@ bf.Run(strings.NewReader(instructions))
 instructions = ">."
 bf.Run(strings.NewReader(instructions))
 ```
-## Custom Instructions
+## Custom Commands
 ``` go
-bf := New(&NewOptions{})
+bf := brainfuck.New(&brainfuck.NewOptions{})
 err := bf.AddCustomCommand('@', func(icw brainfuck.InstructionCtl) {
       // you have tools to do almost anything
 		icw.GetMemory()
@@ -49,6 +49,4 @@ if err != nil {
       // error in case of custom command not found
       panic(err)
 }
-
-
 ```
