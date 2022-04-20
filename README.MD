@@ -24,29 +24,29 @@ bf.Run(strings.NewReader(instructions))
 ```
 ## Custom Commands
 ``` go
-bf := brainfuck.New(&brainfuck.NewOptions{})
-err := bf.AddCustomCommand('@', func(icw brainfuck.InstructionCtl) {
-      // you have tools to do almost anything
-		icw.GetMemory()
-		icw.GetPointerPosition()
+bf := brainfuck.New(&brainfuck.NewOptions{Verbos: true, StaticMemory: false, MemorySize: 10})
 
-		icw.Print()
-		icw.MoveForward()
-		icw.MoveBackward()
-		icw.Increment()
-		icw.Decrement()
-		icw.Read()
+err := bf.AddCustomCommand('@', func(ctl brainfuck.CommandsCtl) {
+      // you have tools to do almost anything
+      ctl.GetMemory()
+      ctl.GetPointerPosition()
+
+      ctl.Print()
+      ctl.MoveForward()
+      ctl.MoveBackward()
+      ctl.Increment()
+      ctl.Decrement()
+      ctl.Read()
 })
 if err != nil {
-      // error in case command is already defined or it's a default command
       panic(err)
 }
-instructions := "@"
-bf.Run(strings.NewReader(instructions))
 
 err = bf.RemoveCustomCommand('@')
 if err != nil {
-      // error in case of custom command not found
+      // error in case of custom instruction not found
       panic(err)
 }
+
+bf.Run(strings.NewReader("@"))
 ```
