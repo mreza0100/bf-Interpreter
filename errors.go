@@ -19,11 +19,11 @@ func (e *errorCheck) makeError(bf *Brainfuck, msg string) error {
 	if start < 0 {
 		start = 0
 	}
-	if end > len(bf.rawInstructions) {
-		end = len(bf.rawInstructions)
+	if end > len(bf.instructions) {
+		end = len(bf.instructions)
 	}
 
-	return fmt.Errorf("\n----\n%v. Error at: %v.\n position: %v\n----\n", msg, bf.runnerAt, bf.rawInstructions[start:end])
+	return fmt.Errorf("\n----\n%v. Error at: %v.\n position: %v\n----\n", msg, bf.runnerAt, bf.instructions[start:end])
 }
 
 func (e *errorCheck) noOpenedLoopCheck(bf *Brainfuck) error {

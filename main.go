@@ -14,10 +14,9 @@ type Brainfuck struct {
 	memPointer int
 	errors     *errorCheck
 
-	instructions    string
-	rawInstructions string
-	runnerAt        int
-	Verbos          bool
+	instructions string
+	runnerAt     int
+	Verbos       bool
 
 	customCommands *CustomCommands
 	Writter        io.Writer
@@ -128,19 +127,13 @@ func (bf *Brainfuck) isRunnerAtEdge() bool {
 }
 
 func (bf *Brainfuck) addInstruction(instruction byte) {
-	cleanInstruction := trim(instruction)
-
 	// do not add repeated instructions from the loop
 	if bf.isRunnerAtEdge() {
-		bf.instructions += cleanInstruction
-		bf.rawInstructions += string(instruction)
+		bf.instructions += string(instruction)
 	}
 
 	// do not add dump instructions
-	isClean := cleanInstruction != ""
-	if isClean {
-		bf.runnerAt++
-	}
+	bf.runnerAt++
 }
 
 func (bf *Brainfuck) execute(instruction byte) {
@@ -214,14 +207,13 @@ func New(options *NewOptions) *Brainfuck {
 	}
 
 	bf := &Brainfuck{
-		memory:          newMemory(options.MemorySize, options.StaticMemory),
-		memPointer:      0,
-		loopStack:       newLoopStack(),
-		instructions:    "",
-		rawInstructions: "",
-		runnerAt:        0,
-		Verbos:          options.Verbos,
-		errors:          newErrorCheck(),
+		memory:       newMemory(options.MemorySize, options.StaticMemory),
+		memPointer:   0,
+		loopStack:    newLoopStack(),
+		instructions: "",
+		runnerAt:     0,
+		Verbos:       options.Verbos,
+		errors:       newErrorCheck(),
 
 		Writter: options.Writter,
 		Reader:  options.Reader,
