@@ -164,8 +164,8 @@ func (bf *Brainfuck) execute(instruction byte) {
 	case loopExit:
 		bf.loopExit()
 	default:
-		if cmd, exist := bf.customCommands.get(instruction); exist {
-			cmd(bf.customCommands.CommandsCtl)
+		if commandExecutor, exist := bf.customCommands.get(instruction); exist {
+			commandExecutor(bf.customCommands.CommandsCtl)
 		}
 	}
 }

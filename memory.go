@@ -6,12 +6,10 @@ type memory struct {
 }
 
 func newMemory(initialSize int, isStatic bool) *memory {
-	m := new(memory)
-
-	m.values = make([]byte, initialSize)
-	m.isStatic = isStatic
-
-	return m
+	return &memory{
+		values:   make([]byte, initialSize),
+		isStatic: isStatic,
+	}
 }
 
 func (m *memory) len() int {
