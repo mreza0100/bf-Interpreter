@@ -40,13 +40,13 @@ type CommandsCtl struct {
 
 type CommandExecutor func(CommandsCtl)
 
-type CustomCommands struct {
+type customCommands struct {
 	commands map[byte]CommandExecutor
 	CommandsCtl
 }
 
-func newCustomCommand(bf *Brainfuck) *CustomCommands {
-	return &CustomCommands{
+func newCustomCommand(bf *Brainfuck) *customCommands {
+	return &customCommands{
 		commands: make(map[byte]CommandExecutor),
 		CommandsCtl: CommandsCtl{
 			GetMemory:          func() []byte { return bf.memory.values },
@@ -62,12 +62,12 @@ func newCustomCommand(bf *Brainfuck) *CustomCommands {
 	}
 }
 
-func (ci *CustomCommands) get(command byte) (CommandExecutor, bool) {
+func (ci *customCommands) get(command byte) (CommandExecutor, bool) {
 	executive, exist := ci.commands[command]
 	return executive, exist
 }
 
-func (ci *CustomCommands) add(command byte, executive CommandExecutor) error {
+func (ci *customCommands) add(command byte, executive CommandExecutor) error {
 	if _, exists := ci.get(command); exists {
 		return fmt.Errorf("command %c already exists", command)
 	}
@@ -80,7 +80,7 @@ func (ci *CustomCommands) add(command byte, executive CommandExecutor) error {
 	return nil
 }
 
-func (ci *CustomCommands) remove(command byte) error {
+func (ci *customCommands) remove(command byte) error {
 	if _, exists := ci.get(command); !exists {
 		return fmt.Errorf("command %c does not exist", command)
 	}

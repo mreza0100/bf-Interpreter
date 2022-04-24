@@ -18,7 +18,7 @@ type Brainfuck struct {
 	runnerAt     int
 	Verbos       bool
 
-	customCommands *CustomCommands
+	customCommands *customCommands
 	Writter        io.Writer
 	Reader         io.Reader
 }
