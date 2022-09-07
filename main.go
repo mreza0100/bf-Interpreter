@@ -4,15 +4,19 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/mreza0100/brainfuck/internals/errs"
+	"github.com/mreza0100/brainfuck/internals/loopstack"
+	"github.com/mreza0100/brainfuck/internals/memory"
 )
 
 // brainfuck interpreter ^.^
 
 type Brainfuck struct {
-	memory     *memory
-	loopStack  *loopStack
+	memory     memory.Memory
+	loopStack  loopstack.Loopstack
 	memPointer int
-	errors     *errorCheck
+	errors     errs.ErrorCheck
 
 	instructions string
 	runnerAt     int
@@ -25,45 +29,45 @@ type Brainfuck struct {
 
 func (bf *Brainfuck) print() {
 	if bf.Verbos {
-		fmt.Fprintf(bf.Writter, "pointer: %v, byte_value: %v, value: %c\n", bf.memPointer, bf.memory.values[bf.memPointer], bf.memory.values[bf.memPointer])
+		fmt.Fprintf(bf.Writter, "pointer: %v, byte_value: %v, value: %c\n", bf.memPointer, bf.memory.GetMemory()[bf.memPointer], bf.memory.GetMemory()[bf.memPointer])
 		return
 	}
 
-	fmt.Fprintf(bf.Writter, "%c", bf.memory.values[bf.memPointer])
+	fmt.Fprintf(bf.Writter, "%c", bf.memory.GetMemory()[bf.memPointer])
 }
 
 func (bf *Brainfuck) moveForward() {
 	bf.memPointer++
-	if !bf.memory.isOut(bf.memPointer) {
+	if !bf.memory.IsOut(bf.memPointer) {
 		return
 	}
 
-	if bf.memory.isStatic {
+	if bf.memory.IsStatic() {
 		bf.memPointer = 0
 	} else {
-		bf.memory.moreCap()
+		bf.memory.IncreaseCap()
 	}
 }
 
 func (bf *Brainfuck) moveBackward() {
 	bf.memPointer--
-	if bf.memory.isOut(bf.memPointer) {
-		bf.memPointer = bf.memory.len() - 1
+	if bf.memory.IsOut(bf.memPointer) {
+		bf.memPointer = bf.memory.Len() - 1
 	}
 }
 
 func (bf *Brainfuck) increment() {
-	if bf.memory.values[bf.memPointer] > 255 {
+	if bf.memory.GetMemory()[bf.memPointer] > 255 {
 		return
 	}
-	bf.memory.values[bf.memPointer]++
+	bf.memory.GetMemory()[bf.memPointer]++
 }
 
 func (bf *Brainfuck) decrement() {
-	if bf.memory.values[bf.memPointer] <= 0 {
+	if bf.memory.GetMemory()[bf.memPointer] <= 0 {
 		return
 	}
-	bf.memory.values[bf.memPointer]--
+	bf.memory.GetMemory()[bf.memPointer]--
 }
 
 func (bf *Brainfuck) read() {
@@ -81,32 +85,42 @@ func (bf *Brainfuck) read() {
 		// handeling dump input from stdin
 		// we can use Fscanln too
 		if bf.Reader == os.Stdin && buf[0] != '\n' {
-			bf.memory.values[bf.memPointer] = buf[0]
+			bf.memory.GetMemory()[bf.memPointer] = buf[0]
 			break
 		}
 	}
 }
 
 func (bf *Brainfuck) loopEnter() {
-	bf.loopStack.push(bf.runnerAt - 1)
+	bf.loopStack.Push(bf.runnerAt - 1)
 }
 
 func (bf *Brainfuck) loopExit() {
-	if err := bf.errors.noOpenedLoopCheck(bf); err != nil {
+	err := bf.errors.OpenLoopCheck(&errs.LoopCheckReq{
+		IsStackEmpty: bf.loopStack.IsEmpty(),
+		RunnerAt:     bf.runnerAt,
+		Instructions: bf.instructions,
+	})
+	if err != nil {
 		panic(err)
 	}
 
-	if bf.memory.values[bf.memPointer] == 0 {
-		bf.loopStack.pop()
+	if bf.memory.GetMemory()[bf.memPointer] == 0 {
+		bf.loopStack.Pop()
 		return
 	}
 
-	loopStart := bf.loopStack.pop()
+	loopStart := bf.loopStack.Pop()
 	loopEnd := bf.runnerAt
 	bf.runnerAt = loopStart
 	insideLoop := bf.instructions[loopStart:loopEnd]
 
-	if err := bf.errors.emptyLoopCheck(insideLoop, bf); err != nil {
+	err = bf.errors.ExitLoopCheck(&errs.LoopCheckReq{
+		IsStackEmpty: bf.loopStack.IsEmpty(),
+		RunnerAt:     bf.runnerAt,
+		Instructions: bf.instructions,
+	}, insideLoop)
+	if err != nil {
 		panic(err)
 	}
 	for _, i := range insideLoop {
@@ -114,7 +128,7 @@ func (bf *Brainfuck) loopExit() {
 	}
 }
 
-func (bf *Brainfuck) AddCustomCommand(command byte, ie CommandExecutor) error {
+func (bf *Brainfuck) AddCustomCommand(command byte, ie CustomCMDExecutor) error {
 	return bf.customCommands.add(command, ie)
 }
 
@@ -139,7 +153,7 @@ func (bf *Brainfuck) addInstruction(instruction byte) {
 func (bf *Brainfuck) execute(instruction byte) {
 	bf.addInstruction(instruction)
 
-	switch instruction {
+	switch cmd(instruction) {
 	case moveForward:
 		bf.moveForward()
 	case moveBackward:
@@ -158,7 +172,7 @@ func (bf *Brainfuck) execute(instruction byte) {
 		bf.loopExit()
 	default:
 		if commandExecutor, exist := bf.customCommands.get(instruction); exist {
-			commandExecutor(bf.customCommands.CommandsCtl)
+			commandExecutor(bf.customCommands.CommandDriver)
 		}
 	}
 }
@@ -207,17 +221,21 @@ func New(options *NewOptions) *Brainfuck {
 	}
 
 	bf := &Brainfuck{
-		memory:       newMemory(options.MemorySize, options.StaticMemory),
+		memory:       nil,
 		memPointer:   0,
-		loopStack:    newLoopStack(),
+		loopStack:    nil,
 		instructions: "",
 		runnerAt:     0,
-		Verbos:       options.Verbos,
-		errors:       newErrorCheck(),
+		errors:       nil,
 
+		Verbos:  options.Verbos,
 		Writter: options.Writter,
 		Reader:  options.Reader,
 	}
+
+	bf.memory = memory.New(options.MemorySize, options.StaticMemory)
+	bf.loopStack = loopstack.New()
+	bf.errors = errs.New()
 	bf.customCommands = newCustomCommand(bf)
 
 	return bf
